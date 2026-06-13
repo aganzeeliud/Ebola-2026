@@ -19,8 +19,8 @@
     <script src="data.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof ebolaData === 'undefined') {
-                console.error("ebolaData is not defined. Make sure data.js is loaded correctly.");
+            if (typeof ebolaMapData === 'undefined') {
+                console.error("ebolaMapData is not defined. Make sure data.js is loaded correctly.");
                 document.getElementById('map').innerHTML = "Error: Data could not be loaded.";
                 return;
             }
@@ -34,9 +34,10 @@
 
             var bounds = L.latLngBounds();
 
-            ebolaData.forEach(function(d) {
+            // Render Outbreak Zones
+            ebolaMapData.ebolaData.forEach(function(d) {
                 if (d.lat && d.lon) {
-                    var radius = Math.sqrt(d.cases) * 3; // Adjusted scale
+                    var radius = Math.sqrt(d.cases) * 3;
                     var color = d.country === 'DRC' ? '#ff4d4d' : '#4d94ff';
                     
                     var circle = L.circleMarker([d.lat, d.lon], {
@@ -45,7 +46,7 @@
                         color: "#000",
                         weight: 1,
                         opacity: 1,
-                        fillOpacity: 0.8
+                        fillOpacity: 0.6
                     }).addTo(map);
 
                     circle.bindPopup(
@@ -61,7 +62,21 @@
                 }
             });
 
-            if (ebolaData.length > 0) {
+            // Render Health Centers
+            ebolaMapData.healthCenters.forEach(function(hc) {
+                var medicalIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: "<div style='background-color:#00cc44; border: 2px solid white; border-radius: 50%; width: 12px; height: 12px;'></div>",
+                    iconSize: [12, 12],
+                    iconAnchor: [6, 6]
+                });
+
+                var marker = L.marker([hc.lat, hc.lon], {icon: medicalIcon}).addTo(map);
+                marker.bindPopup("<b>" + hc.name + "</b><br>Type: " + hc.type);
+                bounds.extend([hc.lat, hc.lon]);
+            });
+
+            if (ebolaMapData.ebolaData.length > 0 || ebolaMapData.healthCenters.length > 0) {
                 map.fitBounds(bounds, { padding: [50, 50] });
             }
 
@@ -73,8 +88,9 @@
                 div.style.padding = '10px';
                 div.style.border = '1px solid #ccc';
                 div.innerHTML = '<h4>Outbreak Legend</h4>' +
-                                '<i style="background: #ff4d4d; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.8;"></i> DRC<br><br>' +
-                                '<i style="background: #4d94ff; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.8;"></i> Uganda<br><br>' +
+                                '<i style="background: #ff4d4d; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.6; border: 1px solid #000; border-radius: 50%;"></i> DRC Health Zone<br><br>' +
+                                '<i style="background: #4d94ff; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.6; border: 1px solid #000; border-radius: 50%;"></i> Uganda Health Zone<br><br>' +
+                                '<i style="background: #00cc44; width: 12px; height: 12px; float: left; margin-right: 12px; border: 2px solid white; border-radius: 50%; margin-top: 3px;"></i> Health Center / ETC<br><br>' +
                                 '<span>Circle size proportional to cases</span>';
                 return div;
             };

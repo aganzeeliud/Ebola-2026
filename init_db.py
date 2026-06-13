@@ -44,6 +44,18 @@ def init_db():
         )
     ''')
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS health_centers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            type TEXT,
+            latitude REAL,
+            longitude REAL,
+            location_id INTEGER,
+            FOREIGN KEY (location_id) REFERENCES locations (id)
+        )
+    ''')
+
     # Insert initial outbreak data
     cursor.execute('''
         INSERT INTO outbreaks (name, virus_strain, declaration_date, status)
@@ -59,7 +71,7 @@ def init_db():
         ("DRC", "Ituri", "Mongbwalu", 1.9352, 30.0462, 120, 25, 3),
         ("DRC", "Ituri", "Rwampara", 1.5167, 30.2167, 100, 20, 2),
         ("DRC", "Ituri", "Aru", 2.8617, 30.8333, 80, 15, 1),
-        ("DRC", "Ituri", "Other Health Zones (15)", 1.5000, 30.0000, 179, 39, 1), # Centroid approx
+        ("DRC", "Ituri", "Other Health Zones (15)", 1.5000, 30.0000, 179, 39, 1),
         # DRC - North Kivu
         ("DRC", "North Kivu", "Beni", 0.4911, 29.4731, 44, 10, 0),
         # DRC - South Kivu
@@ -69,10 +81,12 @@ def init_db():
         # Uganda
         ("Uganda", "Central", "Kampala", 0.3476, 32.5825, 8, 1, 3),
         ("Uganda", "Central", "Wakiso", 0.4000, 32.4825, 1, 0, 1),
-        ("Uganda", "Border/Imported", "DRC Border Zones", 0.5000, 31.0000, 10, 1, 1) # Estimated
+        ("Uganda", "Border/Imported", "DRC Border Zones", 0.5000, 31.0000, 10, 1, 1)
     ]
 
     report_date = "2026-06-12"
+
+    location_map = {} # Store zone -> id for health center linking
 
     for country, province, zone, lat, lon, cases, deaths, recoveries in data:
         cursor.execute('''
@@ -80,11 +94,28 @@ def init_db():
             VALUES (?, ?, ?, ?, ?)
         ''', (country, province, zone, lat, lon))
         location_id = cursor.lastrowid
+        location_map[zone] = location_id
 
         cursor.execute('''
             INSERT INTO reports (outbreak_id, location_id, report_date, confirmed_cases, confirmed_deaths, recoveries)
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (outbreak_id, location_id, report_date, cases, deaths, recoveries))
+
+    # Insert Health Centers
+    health_centers = [
+        ("CME Nyakunde (Bunia)", "Ebola Treatment Center", 1.53867, 30.24895, "Bunia"),
+        ("Beni General Referral Hospital", "Ebola Treatment Center", 0.4911, 29.4731, "Beni"),
+        ("Mongbwalu General Referral Hospital", "Ebola Treatment Center", 1.92930, 30.04919, "Mongbwalu"),
+        ("Aru General Referral Hospital", "Ebola Treatment Center", 2.85902, 30.83841, "Aru"),
+        ("Kasenye Treatment Center", "Ebola Treatment Center", 1.39197, 30.44024, "Other Health Zones (15)"),
+        ("Mulago National Referral Hospital", "Isolation Unit", 0.33779, 32.57555, "Kampala")
+    ]
+
+    for name, hc_type, lat, lon, zone in health_centers:
+        cursor.execute('''
+            INSERT INTO health_centers (name, type, latitude, longitude, location_id)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (name, hc_type, lat, lon, location_map.get(zone)))
 
     conn.commit()
     conn.close()
