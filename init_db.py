@@ -113,6 +113,54 @@ def init_db():
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (outbreak_id, hc_id, report_date, cases, deaths, recoveries))
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS historical_outbreaks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            year INTEGER,
+            country TEXT,
+            location TEXT,
+            virus_strain TEXT,
+            cases INTEGER,
+            deaths INTEGER
+        )
+    ''')
+
+    # Insert Historical Data
+    historical_data = [
+        # DRC
+        (1976, "DRC", "Yambuku", "Zaire (EBOV)", 318, 280),
+        (1977, "DRC", "Tandala", "Zaire (EBOV)", 1, 1),
+        (1995, "DRC", "Kikwit", "Zaire (EBOV)", 315, 254),
+        (2007, "DRC", "Kasai Occidental", "Zaire (EBOV)", 264, 187),
+        (2008, "DRC", "Kasai Occidental", "Zaire (EBOV)", 32, 14),
+        (2012, "DRC", "Isiro", "Bundibugyo (BDBV)", 77, 36),
+        (2014, "DRC", "Boende", "Zaire (EBOV)", 66, 49),
+        (2017, "DRC", "Likati", "Zaire (EBOV)", 8, 4),
+        (2018, "DRC", "Équateur (Bikoro)", "Zaire (EBOV)", 54, 33),
+        (2018, "DRC", "North Kivu/Ituri", "Zaire (EBOV)", 3470, 2287),
+        (2020, "DRC", "Équateur (Mbandaka)", "Zaire (EBOV)", 130, 55),
+        (2021, "DRC", "North Kivu (Biena)", "Zaire (EBOV)", 12, 6),
+        (2021, "DRC", "North Kivu (Beni)", "Zaire (EBOV)", 11, 9),
+        (2022, "DRC", "Équateur (Mbandaka)", "Zaire (EBOV)", 5, 5),
+        (2022, "DRC", "North Kivu (Beni)", "Zaire (EBOV)", 1, 1),
+        (2025, "DRC", "Kasai (Bulape)", "Zaire (EBOV)", 64, 45),
+        # Uganda
+        (2000, "Uganda", "Gulu, Masindi, Mbarara", "Sudan (SUDV)", 425, 224),
+        (2007, "Uganda", "Bundibugyo", "Bundibugyo (BDBV)", 149, 37),
+        (2011, "Uganda", "Luwero", "Sudan (SUDV)", 1, 1),
+        (2012, "Uganda", "Kibaale", "Sudan (SUDV)", 24, 17),
+        (2012, "Uganda", "Luwero", "Sudan (SUDV)", 7, 4),
+        (2019, "Uganda", "Kasese", "Zaire (EBOV)", 3, 3),
+        (2022, "Uganda", "Mubende, Kassanda", "Sudan (SUDV)", 164, 77),
+        (2025, "Uganda", "Kampala", "Sudan (SUDV)", 14, 4)
+    ]
+
+    for year, country, loc, strain, cases, deaths in historical_data:
+        cursor.execute('''
+            INSERT INTO historical_outbreaks (year, country, location, virus_strain, cases, deaths)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (year, country, loc, strain, cases, deaths))
+
     conn.commit()
     conn.close()
     print("Database initialized successfully.")

@@ -1,120 +1,183 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Ebola Outbreak Map 2026</title>
+    <title>Ebola Outbreak Dashboard (2026 & Historical)</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <style>
-        #map { height: 600px; width: 100%; }
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-        .info { padding: 6px 8px; font: 14px/16px Arial, Helvetica, sans-serif; background: white; background: rgba(255,255,255,0.8); box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 5px; }
-        .info h4 { margin: 0 0 5px; color: #777; }
-    </style>
-</head>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f7f6; }
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-        #map { height: 500px; width: 100%; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .chart-container { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); height: 500px; }
-        h1 { color: #2c3e50; text-align: center; }
-        .info { padding: 6px 8px; font: 14px/16px Arial, Helvetica, sans-serif; background: white; background: rgba(255,255,255,0.8); box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 5px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        #map { height: 500px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .full-width { grid-column: 1 / -1; }
+        h1, h2 { color: #1a202c; margin-top: 0; }
+        .stats-summary { display: flex; justify-content: space-around; margin-bottom: 20px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #e53e3e; }
+        .stat-label { font-size: 14px; color: #718096; }
+        .controls { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
+        select { padding: 8px; border-radius: 6px; border: 1px solid #cbd5e0; }
     </style>
 </head>
 <body>
-    <h1>2026 Ebola Outbreak Dashboard (DRC & Uganda)</h1>
-    
-    <div class="dashboard">
-        <div id="map"></div>
-        <div class="chart-container">
-            <canvas id="barChart"></canvas>
+    <div class="container">
+        <h1>Ebola Outbreak Intelligence Dashboard</h1>
+        
+        <div class="controls card">
+            <strong>View Mode:</strong>
+            <select id="viewSelector">
+                <option value="2026">Current 2026 Outbreak (Center-Level)</option>
+                <option value="historical">Historical Context (1976-2025)</option>
+            </select>
+            <span id="historicalControls" style="display:none;">
+                | <strong>Country:</strong>
+                <select id="countryFilter">
+                    <option value="All">All Countries</option>
+                    <option value="DRC">DR Congo</option>
+                    <option value="Uganda">Uganda</option>
+                </select>
+            </span>
         </div>
-    </div>
-    <div class="dashboard" style="grid-template-columns: 1fr; margin-top: 20px;">
-        <div class="chart-container" style="height: 400px; width: 50%; margin: 0 auto;">
-            <canvas id="pieChart"></canvas>
+
+        <div class="dashboard-grid">
+            <div id="map"></div>
+            
+            <div class="card">
+                <h2 id="chartTitle">Current Outbreak Distribution</h2>
+                <div style="height: 400px;"><canvas id="mainChart"></canvas></div>
+            </div>
+
+            <div class="card full-width">
+                <h2>Historical Outbreak Trends (1976 - 2026)</h2>
+                <div style="height: 350px;"><canvas id="trendChart"></canvas></div>
+            </div>
         </div>
     </div>
 
     <script src="data.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof ebolaMapData === 'undefined') {
-                console.error("ebolaMapData is not defined.");
-                return;
+            if (typeof ebolaFullData === 'undefined') return;
+
+            var map = L.map('map').setView([0, 25], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            var markerLayer = L.layerGroup().addTo(map);
+
+            var mainChart, trendChart;
+
+            function updateDashboard() {
+                var view = document.getElementById('viewSelector').value;
+                markerLayer.clearLayers();
+                var bounds = L.latLngBounds();
+
+                if (view === '2026') {
+                    document.getElementById('historicalControls').style.display = 'none';
+                    document.getElementById('chartTitle').innerText = 'Cases by Treatment Center';
+                    
+                    ebolaFullData.ebolaMapData.forEach(d => {
+                        var radius = Math.sqrt(d.cases) * 4;
+                        var color = d.country === 'DRC' ? '#e53e3e' : '#3182ce';
+                        var circle = L.circleMarker([d.lat, d.lon], {
+                            radius: radius, fillColor: color, color: "#000", weight: 1, fillOpacity: 0.7
+                        }).addTo(markerLayer);
+                        circle.bindPopup(`<b>${d.hc_name}</b><br>Cases: ${d.cases}<br>Deaths: ${d.deaths}`);
+                        bounds.extend([d.lat, d.lon]);
+                    });
+                    renderBarChart(ebolaFullData.ebolaMapData);
+                } else {
+                    document.getElementById('historicalControls').style.display = 'inline';
+                    document.getElementById('chartTitle').innerText = 'Total Cases by Year';
+                    var country = document.getElementById('countryFilter').value;
+                    
+                    var filtered = ebolaFullData.historicalData.filter(d => country === 'All' || d.country === country);
+                    
+                    // Historical Map (simplified to country centroids for historical data)
+                    var centers = { "DRC": [-4.03, 21.75], "Uganda": [1.37, 32.29] };
+                    Object.keys(centers).forEach(c => {
+                        if (country === 'All' || country === c) {
+                            var countryTotal = filtered.filter(f => f.country === c).reduce((a, b) => a + b.cases, 0);
+                            if (countryTotal > 0) {
+                                var circle = L.circleMarker(centers[c], {
+                                    radius: Math.sqrt(countryTotal) / 2, fillColor: c === 'DRC' ? '#e53e3e' : '#3182ce', color: "#000", weight: 1, fillOpacity: 0.6
+                                }).addTo(markerLayer);
+                                circle.bindPopup(`<b>${c} (Historical Total)</b><br>Total Cases: ${countryTotal}`);
+                                bounds.extend(centers[c]);
+                            }
+                        }
+                    });
+                    renderHistoricalChart(filtered);
+                }
+                if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
             }
 
-            // --- Leaflet Map ---
-            var map = L.map('map').setView([0, 25], 5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            function renderBarChart(data) {
+                if (mainChart) mainChart.destroy();
+                mainChart = new Chart(document.getElementById('mainChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(d => d.hc_name.split(' (')[0]),
+                        datasets: [{
+                            label: 'Confirmed Cases',
+                            data: data.map(d => d.cases),
+                            backgroundColor: data.map(d => d.country === 'DRC' ? '#feb2b2' : '#90cdf4'),
+                            borderColor: data.map(d => d.country === 'DRC' ? '#e53e3e' : '#3182ce'),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
+                });
+            }
 
-            var bounds = L.latLngBounds();
-            ebolaMapData.forEach(function(d) {
-                if (d.lat && d.lon) {
-                    var radius = Math.sqrt(d.cases) * 4;
-                    var color = d.country === 'DRC' ? '#ff4d4d' : '#4d94ff';
-                    var circle = L.circleMarker([d.lat, d.lon], {
-                        radius: radius, fillColor: color, color: "#000", weight: 1, opacity: 1, fillOpacity: 0.7
-                    }).addTo(map);
-                    circle.bindPopup("<b>" + d.hc_name + "</b><br>Cases: " + d.cases + "<br>CFR: " + d.cfr + "%");
-                    bounds.extend([d.lat, d.lon]);
-                }
-            });
-            if (ebolaMapData.length > 0) map.fitBounds(bounds, { padding: [50, 50] });
+            function renderHistoricalChart(data) {
+                if (mainChart) mainChart.destroy();
+                var yearData = data.reduce((acc, curr) => {
+                    acc[curr.year] = (acc[curr.year] || 0) + curr.cases;
+                    return acc;
+                }, {});
+                mainChart = new Chart(document.getElementById('mainChart'), {
+                    type: 'line',
+                    data: {
+                        labels: Object.keys(yearData),
+                        datasets: [{ label: 'Cases per Year', data: Object.values(yearData), borderColor: '#4a5568', fill: false, tension: 0.1 }]
+                    },
+                    options: { maintainAspectRatio: false }
+                });
+            }
 
-            // --- Data Preparation for Charts ---
-            var labels = ebolaMapData.map(d => d.hc_name.split(' (')[0]);
-            var caseData = ebolaMapData.map(d => d.cases);
-            var countryStats = ebolaMapData.reduce((acc, curr) => {
-                acc[curr.country] = (acc[curr.country] || 0) + curr.cases;
-                return acc;
-            }, {});
+            function renderTrends() {
+                var drcData = ebolaFullData.historicalData.filter(d => d.country === 'DRC');
+                var ugData = ebolaFullData.historicalData.filter(d => d.country === 'Uganda');
+                
+                var allYears = [...new Set(ebolaFullData.historicalData.map(d => d.year))].sort((a,b) => a-b);
+                
+                var getYearly = (data) => allYears.map(y => data.filter(d => d.year === y).reduce((a, b) => a + b.cases, 0));
 
-            // --- Bar Chart (Cases by Center) ---
-            new Chart(document.getElementById('barChart'), {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Confirmed Cases by Health Center',
-                        data: caseData,
-                        backgroundColor: ebolaMapData.map(d => d.country === 'DRC' ? 'rgba(255, 77, 77, 0.7)' : 'rgba(77, 148, 255, 0.7)'),
-                        borderColor: ebolaMapData.map(d => d.country === 'DRC' ? 'rgb(255, 77, 77)' : 'rgb(77, 148, 255)'),
-                        borderWidth: 1
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    scales: { x: { beginAtZero: true } },
-                    plugins: { title: { display: true, text: 'Cases by Treatment Facility' } }
-                }
-            });
-
-            // --- Pie Chart (Cases by Country) ---
-            new Chart(document.getElementById('pieChart'), {
-                type: 'pie',
-                data: {
-                    labels: Object.keys(countryStats),
-                    datasets: [{
-                        data: Object.values(countryStats),
-                        backgroundColor: ['rgba(255, 77, 77, 0.8)', 'rgba(77, 148, 255, 0.8)'],
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: true, text: 'Distribution of Cases by Country' },
-                        legend: { position: 'bottom' }
+                trendChart = new Chart(document.getElementById('trendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: allYears,
+                        datasets: [
+                            { label: 'DR Congo', data: getYearly(drcData), borderColor: '#e53e3e', backgroundColor: 'rgba(229, 62, 62, 0.1)', fill: true },
+                            { label: 'Uganda', data: getYearly(ugData), borderColor: '#3182ce', backgroundColor: 'rgba(49, 130, 206, 0.1)', fill: true }
+                        ]
+                    },
+                    options: { 
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: { y: { type: 'logarithmic', title: { display: true, text: 'Cases (Log Scale)' } } }
                     }
-                }
-            });
+                });
+            }
+
+            document.getElementById('viewSelector').addEventListener('change', updateDashboard);
+            document.getElementById('countryFilter').addEventListener('change', updateDashboard);
+
+            renderTrends();
+            updateDashboard();
         });
     </script>
 </body>
