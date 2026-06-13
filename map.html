@@ -18,42 +18,68 @@
     <div id="map"></div>
     <script src="data.js"></script>
     <script>
-        var map = L.map('map').setView([0, 25], 5);
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof ebolaData === 'undefined') {
+                console.error("ebolaData is not defined. Make sure data.js is loaded correctly.");
+                document.getElementById('map').innerHTML = "Error: Data could not be loaded.";
+                return;
+            }
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+            var map = L.map('map').setView([0, 25], 5);
 
-        ebolaData.forEach(function(d) {
-            var radius = Math.sqrt(d.cases) * 5;
-            var color = d.country === 'DRC' ? '#ff4d4d' : '#4d94ff';
-            
-            var circle = L.circleMarker([d.lat, d.lon], {
-                radius: radius,
-                fillColor: color,
-                color: "#000",
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.8
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
             }).addTo(map);
 
-            circle.bindPopup(
-                "<b>" + d.city + ", " + d.country + "</b><br>" +
-                "Province: " + d.province + "<br>" +
-                "Confirmed Cases: " + d.cases + "<br>" +
-                "Confirmed Deaths: " + d.deaths + "<br>" +
-                "Recoveries: " + d.recoveries + "<br>" +
-                "Case Fatality Rate: " + d.cfr + "%"
-            );
+            var bounds = L.latLngBounds();
+
+            ebolaData.forEach(function(d) {
+                if (d.lat && d.lon) {
+                    var radius = Math.sqrt(d.cases) * 3; // Adjusted scale
+                    var color = d.country === 'DRC' ? '#ff4d4d' : '#4d94ff';
+                    
+                    var circle = L.circleMarker([d.lat, d.lon], {
+                        radius: radius,
+                        fillColor: color,
+                        color: "#000",
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+
+                    circle.bindPopup(
+                        "<b>" + d.city + ", " + d.country + "</b><br>" +
+                        "Province: " + d.province + "<br>" +
+                        "Confirmed Cases: " + d.cases + "<br>" +
+                        "Confirmed Deaths: " + d.deaths + "<br>" +
+                        "Recoveries: " + d.recoveries + "<br>" +
+                        "Case Fatality Rate: " + d.cfr + "%"
+                    );
+
+                    bounds.extend([d.lat, d.lon]);
+                }
+            });
+
+            if (ebolaData.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+
+            // Legend
+            var legend = L.control({position: 'bottomright'});
+            legend.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'info legend');
+                div.style.backgroundColor = 'white';
+                div.style.padding = '10px';
+                div.style.border = '1px solid #ccc';
+                div.innerHTML = '<h4>Outbreak Legend</h4>' +
+                                '<i style="background: #ff4d4d; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.8;"></i> DRC<br><br>' +
+                                '<i style="background: #4d94ff; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.8;"></i> Uganda<br><br>' +
+                                '<span>Circle size proportional to cases</span>';
+                return div;
+            };
+            legend.addTo(map);
         });
-
-        // Fit map to markers
-        var group = new L.featureGroup(ebolaData.map(function(d) {
-            return L.marker([d.lat, d.lon]);
-        }));
-        map.fitBounds(group.getBounds());
-
     </script>
 </body>
 </html>
