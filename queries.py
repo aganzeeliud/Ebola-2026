@@ -6,13 +6,13 @@ def get_summary():
 
     query = '''
         SELECT 
-            l.country, 
+            hc.country, 
             SUM(r.confirmed_cases) as total_cases, 
             SUM(r.confirmed_deaths) as total_deaths,
             SUM(r.recoveries) as total_recoveries
         FROM reports r
-        JOIN locations l ON r.location_id = l.id
-        GROUP BY l.country
+        JOIN health_centers hc ON r.health_center_id = hc.id
+        GROUP BY hc.country
     '''
     
     cursor.execute(query)

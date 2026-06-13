@@ -6,14 +6,14 @@ def run_statistical_analysis():
 
     query = '''
         SELECT 
-            l.country, 
-            l.province_region, 
-            l.health_zone_city, 
+            hc.country, 
+            hc.province, 
+            hc.name, 
             r.confirmed_cases, 
             r.confirmed_deaths, 
             r.recoveries
         FROM reports r
-        JOIN locations l ON r.location_id = l.id
+        JOIN health_centers hc ON r.health_center_id = hc.id
     '''
     
     cursor.execute(query)

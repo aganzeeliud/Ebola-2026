@@ -76,9 +76,13 @@
         .footer-content ul { list-style: none; padding: 0; margin: 0; opacity: 0.8; font-size: 0.875rem; }
         .footer-content li { margin-bottom: 0.5rem; }
         
+        #resetMap:hover { background: var(--bg) !important; color: var(--primary) !important; border-color: var(--primary) !important; }
+
         @media (max-width: 1024px) {
             .main-grid { grid-template-columns: 1fr; }
             .footer-content { grid-template-columns: 1fr; gap: 2rem; }
+            .controls-bar { flex-direction: column; align-items: stretch; gap: 1rem; }
+            .control-group { justify-content: space-between; }
         }
     </style>
 </head>
@@ -98,19 +102,24 @@
         <!-- Dashboard Controls -->
         <div class="controls-bar">
             <div class="control-group">
-                <label for="viewSelector">Analysis Mode</label>
-                <select id="viewSelector">
+                <label for="viewSelector"><i class="fa-solid fa-layer-group"></i> Select Dataset:</label>
+                <select id="viewSelector" title="Switch between current 2026 data and historical outbreaks">
                     <option value="2026">Current 2026 Outbreak</option>
                     <option value="historical">Historical Context (1976-2025)</option>
                 </select>
             </div>
             <div class="control-group" id="historicalControls" style="display:none;">
-                <label for="countryFilter">Country Filter</label>
-                <select id="countryFilter">
+                <label for="countryFilter"><i class="fa-solid fa-filter"></i> Country:</label>
+                <select id="countryFilter" title="Filter historical data by country">
                     <option value="All">All Regions</option>
                     <option value="DRC">DR Congo</option>
                     <option value="Uganda">Uganda</option>
                 </select>
+            </div>
+            <div class="control-group" style="margin-left: auto;">
+                <button id="resetMap" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 0.875rem; font-weight: 600; color: var(--text-muted); transition: all 0.2s;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Reset Map View
+                </button>
             </div>
         </div>
 
@@ -405,6 +414,19 @@
 
             document.getElementById('viewSelector').addEventListener('change', updateDashboard);
             document.getElementById('countryFilter').addEventListener('change', updateDashboard);
+            document.getElementById('resetMap').addEventListener('click', function() {
+                var bounds = L.latLngBounds();
+                if (document.getElementById('viewSelector').value === '2026') {
+                    ebolaFullData.ebolaMapData.forEach(d => bounds.extend([d.lat, d.lon]));
+                } else {
+                    var centers = { "DRC": [-4.03, 21.75], "Uganda": [1.37, 32.29] };
+                    var country = document.getElementById('countryFilter').value;
+                    Object.keys(centers).forEach(c => {
+                        if (country === 'All' || country === c) bounds.extend(centers[c]);
+                    });
+                }
+                if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
+            });
 
             renderTrends();
             updateDashboard();
