@@ -55,6 +55,27 @@
                 <h2>Historical Outbreak Trends (1976 - 2026)</h2>
                 <div style="height: 350px;"><canvas id="trendChart"></canvas></div>
             </div>
+
+            <div class="card full-width">
+                <h2>2026 Outbreak: Health Center Data Table</h2>
+                <div style="overflow-x: auto;">
+                    <table id="data-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                        <thead>
+                            <tr style="background-color: #edf2f7; text-align: left;">
+                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">Health Center</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">Location</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">Country</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">Cases</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">Deaths</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">CFR %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -73,6 +94,8 @@
                 var view = document.getElementById('viewSelector').value;
                 markerLayer.clearLayers();
                 var bounds = L.latLngBounds();
+                var tableBody = document.getElementById('table-body');
+                tableBody.innerHTML = '';
 
                 if (view === '2026') {
                     document.getElementById('historicalControls').style.display = 'none';
@@ -86,6 +109,17 @@
                         }).addTo(markerLayer);
                         circle.bindPopup(`<b>${d.hc_name}</b><br>Cases: ${d.cases}<br>Deaths: ${d.deaths}`);
                         bounds.extend([d.lat, d.lon]);
+
+                        // Populate Table
+                        var row = `<tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${d.hc_name}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${d.zone}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${d.country}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${d.cases}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${d.deaths}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${d.cfr}%</td>
+                        </tr>`;
+                        tableBody.innerHTML += row;
                     });
                     renderBarChart(ebolaFullData.ebolaMapData);
                 } else {
@@ -109,6 +143,21 @@
                             }
                         }
                     });
+
+                    // Populate Table for Historical View
+                    filtered.forEach(d => {
+                        var cfr = ((d.deaths / d.cases) * 100).toFixed(1);
+                        var row = `<tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">Outbreak ${d.year}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${d.location}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${d.country}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${d.cases}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${d.deaths}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${cfr}%</td>
+                        </tr>`;
+                        tableBody.innerHTML += row;
+                    });
+
                     renderHistoricalChart(filtered);
                 }
                 if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
