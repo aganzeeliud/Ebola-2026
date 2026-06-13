@@ -56,24 +56,23 @@
                 <div style="height: 350px;"><canvas id="trendChart"></canvas></div>
             </div>
 
-            <div class="card full-width">
-                <h2>2026 Outbreak: Health Center Data Table</h2>
-                <div style="overflow-x: auto;">
-                    <table id="data-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                        <thead>
-                            <tr style="background-color: #edf2f7; text-align: left;">
-                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">Health Center</th>
-                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">Location</th>
-                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">Country</th>
-                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">Cases</th>
-                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">Deaths</th>
-                                <th style="padding: 12px; border-bottom: 2px solid #cbd5e0;">CFR %</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body">
-                            <!-- Populated by JS -->
-                        </tbody>
-                    </table>
+            <div class="card full-width" style="margin-top: 20px; border-top: 4px solid #cbd5e0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h2>Data Sources & Credits</h2>
+                        <ul style="color: #4a5568; line-height: 1.6;">
+                            <li><strong>Current Outbreak (2026):</strong> World Health Organization (WHO) Africa, Africa CDC, DRC Ministry of Health, Uganda Ministry of Health (Situation Reports as of June 12, 2026).</li>
+                            <li><strong>Historical Data (1976-2025):</strong> CDC Ebola Outbreak Distribution Map, WHO Global Health Observatory, and peer-reviewed epidemiological studies.</li>
+                            <li><strong>Geospatial Data:</strong> OpenStreetMap contributors, Humanitarian OpenStreetMap Team (HOT), and IOM Displacement Tracking Matrix (DTM).</li>
+                        </ul>
+                        <p style="font-size: 14px; color: #718096; font-style: italic;">Note: Statistical data in this dashboard is for informational and educational purposes based on available situation reports.</p>
+                    </div>
+                    <div style="text-align: right; color: #718096; font-size: 14px;">
+                        <strong>Last Updated:</strong><br>
+                        June 13, 2026<br><br>
+                        <strong>Powered by:</strong><br>
+                        Leaflet.js & Chart.js
+                    </div>
                 </div>
             </div>
         </div>
