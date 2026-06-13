@@ -1,0 +1,12 @@
+country,province_region,health_zone_city,report_date,confirmed_cases,confirmed_deaths,recoveries,outbreak_name,virus_strain
+DRC,Ituri,Bunia,2026-06-12,150,30,5,2026 Bundibugyo Ebola Outbreak,Bundibugyo virus (BDBV)
+DRC,Ituri,Mongbwalu,2026-06-12,120,25,3,2026 Bundibugyo Ebola Outbreak,Bundibugyo virus (BDBV)
+DRC,Ituri,Rwampara,2026-06-12,100,20,2,2026 Bundibugyo Ebola Outbreak,Bundibugyo virus (BDBV)
+DRC,Ituri,Aru,2026-06-12,80,15,1,2026 Bundibugyo Ebola Outbreak,Bundibugyo virus (BDBV)
+DRC,Ituri,Other Health Zones (15),2026-06-12,179,39,1,2026 Bundibugyo Ebola Outbreak,Bundibugyo virus (BDBV)
+DRC,North Kivu,Beni,2026-06-12,44,10,0,2026 Bundibugyo Ebola Outbreak,Bundibugyo virus (BDBV)
+DRC,South Kivu,Miti-Murhesa,2026-06-12,3,0,0,2026 Bundibugyo Ebola Outbreak,Bundibugyo virus (BDBV)
+DRC,Kinshasa,Kinshasa,2026-06-12,13,0,0,2026 Bundibugyo Ebola Outbreak,Bundibugyo virus (BDBV)
+Uganda,Central,Kampala,2026-06-12,8,1,3,2026 Bundibugyo Ebola Outbreak,Bundibugyo virus (BDBV)
+Uganda,Central,Wakiso,2026-06-12,1,0,1,2026 Bundibugyo Ebola Outbreak,Bundibugyo virus (BDBV)
+Uganda,Border/Imported,DRC Border Zones,2026-06-12,10,1,1,2026 Bundibugyo Ebola Outbreak,Bundibugyo virus (BDBV)
