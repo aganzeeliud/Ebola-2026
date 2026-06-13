@@ -5,63 +5,47 @@ def generate_js_data():
     conn = sqlite3.connect('ebola_outbreak.db')
     cursor = conn.cursor()
 
-    # Get Health Zone Data
-    query_zones = '''
+    # Get Reports linked to Health Centers
+    query = '''
         SELECT 
-            l.country, 
-            l.province_region, 
-            l.health_zone_city, 
-            l.latitude, 
-            l.longitude,
+            hc.name, 
+            hc.type, 
+            hc.latitude, 
+            hc.longitude, 
+            hc.country, 
+            hc.province, 
+            hc.city_zone,
             r.confirmed_cases, 
             r.confirmed_deaths, 
-            r.recoveries
+            r.recoveries,
+            r.report_date
         FROM reports r
-        JOIN locations l ON r.location_id = l.id
+        JOIN health_centers hc ON r.health_center_id = hc.id
     '''
     
-    cursor.execute(query_zones)
-    rows_zones = cursor.fetchall()
+    cursor.execute(query)
+    rows = cursor.fetchall()
     
-    zones_data = []
-    for country, province, zone, lat, lon, cases, deaths, recov in rows_zones:
+    map_data = []
+    for name, hc_type, lat, lon, country, province, zone, cases, deaths, recov, date in rows:
         cfr = (deaths / cases * 100) if cases > 0 else 0
-        zones_data.append({
+        map_data.append({
+            "hc_name": name,
+            "hc_type": hc_type,
             "country": country,
             "province": province,
-            "city": zone,
+            "zone": zone,
             "lat": lat,
             "lon": lon,
             "cases": cases,
             "deaths": deaths,
             "recoveries": recov,
-            "cfr": round(cfr, 1)
+            "cfr": round(cfr, 1),
+            "date": date
         })
-
-    # Get Health Center Data
-    query_hc = '''
-        SELECT name, type, latitude, longitude
-        FROM health_centers
-    '''
-    cursor.execute(query_hc)
-    rows_hc = cursor.fetchall()
-
-    hc_data = []
-    for name, hc_type, lat, lon in rows_hc:
-        hc_data.append({
-            "name": name,
-            "type": hc_type,
-            "lat": lat,
-            "lon": lon
-        })
-
-    final_data = {
-        "ebolaData": zones_data,
-        "healthCenters": hc_data
-    }
 
     with open('data.js', 'w') as f:
-        f.write("var ebolaMapData = " + json.dumps(final_data, indent=4) + ";")
+        f.write("var ebolaMapData = " + json.dumps(map_data, indent=4) + ";")
 
     conn.close()
     print("Map data generated in data.js")

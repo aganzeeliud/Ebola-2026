@@ -31,7 +31,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS reports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             outbreak_id INTEGER,
-            location_id INTEGER,
+            health_center_id INTEGER,
             report_date DATE,
             confirmed_cases INTEGER DEFAULT 0,
             confirmed_deaths INTEGER DEFAULT 0,
@@ -40,7 +40,7 @@ def init_db():
             probable_deaths INTEGER DEFAULT 0,
             notes TEXT,
             FOREIGN KEY (outbreak_id) REFERENCES outbreaks (id),
-            FOREIGN KEY (location_id) REFERENCES locations (id)
+            FOREIGN KEY (health_center_id) REFERENCES health_centers (id)
         )
     ''')
 
@@ -51,8 +51,9 @@ def init_db():
             type TEXT,
             latitude REAL,
             longitude REAL,
-            location_id INTEGER,
-            FOREIGN KEY (location_id) REFERENCES locations (id)
+            country TEXT,
+            province TEXT,
+            city_zone TEXT
         )
     ''')
 
@@ -63,59 +64,54 @@ def init_db():
     ''', ("2026 Bundibugyo Ebola Outbreak", "Bundibugyo virus (BDBV)", "2026-05-15", "Ongoing"))
     outbreak_id = cursor.lastrowid
 
-    # Locations and Reports (Data as of June 12, 2026)
-    # Format: (country, province, zone, lat, lon, cases, deaths, recoveries)
-    data = [
-        # DRC - Ituri
-        ("DRC", "Ituri", "Bunia", 1.5670, 30.2500, 150, 30, 5),
-        ("DRC", "Ituri", "Mongbwalu", 1.9352, 30.0462, 120, 25, 3),
-        ("DRC", "Ituri", "Rwampara", 1.5167, 30.2167, 100, 20, 2),
-        ("DRC", "Ituri", "Aru", 2.8617, 30.8333, 80, 15, 1),
-        ("DRC", "Ituri", "Other Health Zones (15)", 1.5000, 30.0000, 179, 39, 1),
-        # DRC - North Kivu
-        ("DRC", "North Kivu", "Beni", 0.4911, 29.4731, 44, 10, 0),
-        # DRC - South Kivu
-        ("DRC", "South Kivu", "Miti-Murhesa", -2.3667, 28.8000, 3, 0, 0),
-        # DRC - Kinshasa
-        ("DRC", "Kinshasa", "Kinshasa", -4.3222, 15.3119, 13, 0, 0),
-        # Uganda
-        ("Uganda", "Central", "Kampala", 0.3476, 32.5825, 8, 1, 3),
-        ("Uganda", "Central", "Wakiso", 0.4000, 32.4825, 1, 0, 1),
-        ("Uganda", "Border/Imported", "DRC Border Zones", 0.5000, 31.0000, 10, 1, 1)
+    # Health Centers Data
+    # Format: (name, type, lat, lon, country, province, zone)
+    health_centers_data = [
+        ("CME Nyakunde (Bunia)", "Ebola Treatment Center", 1.53867, 30.24895, "DRC", "Ituri", "Bunia"),
+        ("Mongbwalu General Referral Hospital", "Ebola Treatment Center", 1.92930, 30.04919, "DRC", "Ituri", "Mongbwalu"),
+        ("Rwampara General Referral Hospital", "Ebola Treatment Center", 1.54348, 30.17918, "DRC", "Ituri", "Rwampara"),
+        ("Aru General Referral Hospital", "Ebola Treatment Center", 2.85902, 30.83841, "DRC", "Ituri", "Aru"),
+        ("Kasenye Treatment Center", "Ebola Treatment Center", 1.39197, 30.44024, "DRC", "Ituri", "Other Health Zones"),
+        ("Beni General Referral Hospital", "Ebola Treatment Center", 0.4911, 29.4731, "DRC", "North Kivu", "Beni"),
+        ("Hôpital de l’Amitié Sino-Congolaise", "Isolation Center", -4.40334, 15.37416, "DRC", "Kinshasa", "Kinshasa"),
+        ("Miti-Murhesa Health Center", "Isolation Center", -2.3667, 28.8000, "DRC", "South Kivu", "Miti-Murhesa"),
+        ("Mulago National Referral Hospital", "Isolation Unit", 0.33779, 32.57555, "Uganda", "Central", "Kampala"),
+        ("Entebbe Regional Referral Hospital", "Isolation Unit", 0.06387, 32.47166, "Uganda", "Wakiso", "Wakiso"),
+        ("Bwera General Hospital", "Border Screening ETC", 0.0333, 29.7667, "Uganda", "Kasese", "Border Zones")
+    ]
+
+    hc_map = {}
+    for name, hc_type, lat, lon, country, province, zone in health_centers_data:
+        cursor.execute('''
+            INSERT INTO health_centers (name, type, latitude, longitude, country, province, city_zone)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (name, hc_type, lat, lon, country, province, zone))
+        hc_map[name] = cursor.lastrowid
+
+    # Reports Data (Cases assigned to Health Centers)
+    # Format: (hc_name, cases, deaths, recoveries)
+    reports_data = [
+        ("CME Nyakunde (Bunia)", 150, 30, 5),
+        ("Mongbwalu General Referral Hospital", 120, 25, 3),
+        ("Rwampara General Referral Hospital", 100, 20, 2),
+        ("Aru General Referral Hospital", 80, 15, 1),
+        ("Kasenye Treatment Center", 179, 39, 1),
+        ("Beni General Referral Hospital", 44, 10, 0),
+        ("Hôpital de l’Amitié Sino-Congolaise", 13, 0, 0),
+        ("Miti-Murhesa Health Center", 3, 0, 0),
+        ("Mulago National Referral Hospital", 8, 1, 3),
+        ("Entebbe Regional Referral Hospital", 1, 0, 1),
+        ("Bwera General Hospital", 10, 1, 1)
     ]
 
     report_date = "2026-06-12"
 
-    location_map = {} # Store zone -> id for health center linking
-
-    for country, province, zone, lat, lon, cases, deaths, recoveries in data:
+    for hc_name, cases, deaths, recoveries in reports_data:
+        hc_id = hc_map.get(hc_name)
         cursor.execute('''
-            INSERT INTO locations (country, province_region, health_zone_city, latitude, longitude)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (country, province, zone, lat, lon))
-        location_id = cursor.lastrowid
-        location_map[zone] = location_id
-
-        cursor.execute('''
-            INSERT INTO reports (outbreak_id, location_id, report_date, confirmed_cases, confirmed_deaths, recoveries)
+            INSERT INTO reports (outbreak_id, health_center_id, report_date, confirmed_cases, confirmed_deaths, recoveries)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (outbreak_id, location_id, report_date, cases, deaths, recoveries))
-
-    # Insert Health Centers
-    health_centers = [
-        ("CME Nyakunde (Bunia)", "Ebola Treatment Center", 1.53867, 30.24895, "Bunia"),
-        ("Beni General Referral Hospital", "Ebola Treatment Center", 0.4911, 29.4731, "Beni"),
-        ("Mongbwalu General Referral Hospital", "Ebola Treatment Center", 1.92930, 30.04919, "Mongbwalu"),
-        ("Aru General Referral Hospital", "Ebola Treatment Center", 2.85902, 30.83841, "Aru"),
-        ("Kasenye Treatment Center", "Ebola Treatment Center", 1.39197, 30.44024, "Other Health Zones (15)"),
-        ("Mulago National Referral Hospital", "Isolation Unit", 0.33779, 32.57555, "Kampala")
-    ]
-
-    for name, hc_type, lat, lon, zone in health_centers:
-        cursor.execute('''
-            INSERT INTO health_centers (name, type, latitude, longitude, location_id)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (name, hc_type, lat, lon, location_map.get(zone)))
+        ''', (outbreak_id, hc_id, report_date, cases, deaths, recoveries))
 
     conn.commit()
     conn.close()

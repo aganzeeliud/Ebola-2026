@@ -14,7 +14,7 @@
     </style>
 </head>
 <body>
-    <h1>2026 Ebola Outbreak Map (DRC & Uganda)</h1>
+    <h1>2026 Ebola Outbreak Map (Cases by Health Center)</h1>
     <div id="map"></div>
     <script src="data.js"></script>
     <script>
@@ -34,10 +34,9 @@
 
             var bounds = L.latLngBounds();
 
-            // Render Outbreak Zones
-            ebolaMapData.ebolaData.forEach(function(d) {
+            ebolaMapData.forEach(function(d) {
                 if (d.lat && d.lon) {
-                    var radius = Math.sqrt(d.cases) * 3;
+                    var radius = Math.sqrt(d.cases) * 4;
                     var color = d.country === 'DRC' ? '#ff4d4d' : '#4d94ff';
                     
                     var circle = L.circleMarker([d.lat, d.lon], {
@@ -46,12 +45,13 @@
                         color: "#000",
                         weight: 1,
                         opacity: 1,
-                        fillOpacity: 0.6
+                        fillOpacity: 0.7
                     }).addTo(map);
 
                     circle.bindPopup(
-                        "<b>" + d.city + ", " + d.country + "</b><br>" +
-                        "Province: " + d.province + "<br>" +
+                        "<b>" + d.hc_name + "</b><br>" +
+                        "Type: " + d.hc_type + "<br>" +
+                        "Location: " + d.zone + ", " + d.province + ", " + d.country + "<br><hr>" +
                         "Confirmed Cases: " + d.cases + "<br>" +
                         "Confirmed Deaths: " + d.deaths + "<br>" +
                         "Recoveries: " + d.recoveries + "<br>" +
@@ -62,21 +62,7 @@
                 }
             });
 
-            // Render Health Centers
-            ebolaMapData.healthCenters.forEach(function(hc) {
-                var medicalIcon = L.divIcon({
-                    className: 'custom-div-icon',
-                    html: "<div style='background-color:#00cc44; border: 2px solid white; border-radius: 50%; width: 12px; height: 12px;'></div>",
-                    iconSize: [12, 12],
-                    iconAnchor: [6, 6]
-                });
-
-                var marker = L.marker([hc.lat, hc.lon], {icon: medicalIcon}).addTo(map);
-                marker.bindPopup("<b>" + hc.name + "</b><br>Type: " + hc.type);
-                bounds.extend([hc.lat, hc.lon]);
-            });
-
-            if (ebolaMapData.ebolaData.length > 0 || ebolaMapData.healthCenters.length > 0) {
+            if (ebolaMapData.length > 0) {
                 map.fitBounds(bounds, { padding: [50, 50] });
             }
 
@@ -87,11 +73,10 @@
                 div.style.backgroundColor = 'white';
                 div.style.padding = '10px';
                 div.style.border = '1px solid #ccc';
-                div.innerHTML = '<h4>Outbreak Legend</h4>' +
-                                '<i style="background: #ff4d4d; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.6; border: 1px solid #000; border-radius: 50%;"></i> DRC Health Zone<br><br>' +
-                                '<i style="background: #4d94ff; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.6; border: 1px solid #000; border-radius: 50%;"></i> Uganda Health Zone<br><br>' +
-                                '<i style="background: #00cc44; width: 12px; height: 12px; float: left; margin-right: 12px; border: 2px solid white; border-radius: 50%; margin-top: 3px;"></i> Health Center / ETC<br><br>' +
-                                '<span>Circle size proportional to cases</span>';
+                div.innerHTML = '<h4>Map Legend</h4>' +
+                                '<i style="background: #ff4d4d; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7; border: 1px solid #000; border-radius: 50%;"></i> DRC Health Center<br><br>' +
+                                '<i style="background: #4d94ff; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7; border: 1px solid #000; border-radius: 50%;"></i> Uganda Health Center<br><br>' +
+                                '<span>Bubble size proportional to cases</span>';
                 return div;
             };
             legend.addTo(map);
